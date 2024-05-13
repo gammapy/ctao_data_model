@@ -1,11 +1,9 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 import collections
-from astropy.time import Time
-import astropy.units as u
-from gammapy.irf import IRF, load_irf_dict_from_file
 
 class IRFGroup:
     """Group different IRF components that represent the response in a given time range."""
-    def __init__(self, aeff=None, psf=None, edisp=None, bkg=None, rad_max=None, time_range=None):
+    def __init__(self, aeff=None, psf=None, edisp=None, bkg=None, rad_max=None, gti=None, is_pointlike=False):
         """
         Parameters
         ----------
@@ -20,13 +18,18 @@ class IRFGroup:
         rad_max : `~gammapy.irf.RadMax2D`, optional
             Only for point-like IRFs: RAD_MAX table (energy dependent RAD_MAX)
             For a fixed RAD_MAX, create a RadMax2D with a single bin. Default is None.
+        gti : `~gammapy.data.GTI`
+            The validity time interval. Default is None.
+        is_pointlike : bool
+            Is the IRF group designed for pointlike analysis. Default is False
         """
         self.aeff = aeff
         self.psf = psf
         self.bkg = bkg
         self.edisp = edisp
         self.rad_max = rad_max
-        self.time_range = time_range
+        self.gti = gti
+        self.is_pointlike = is_pointlike
 
 class IRFGroups(collections.abc.MutableSequence):
     """Sequence of IRF groups."""
@@ -62,7 +65,7 @@ class IRFGroups(collections.abc.MutableSequence):
     @property
     def time_ranges(self):
         """List all IRFGroup time intervals."""
-        return [irf_grp.time_range for irf_grp in self._irf_groups]
+        return [irf_grp.gti for irf_grp in self._irf_groups]
 
     def get_irf_group(self, time):
         """Retrieve IRFGroup valid at `~astropy.time.Time` time."""

@@ -1,3 +1,4 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 from gammapy.data import EventList, GTI, Observation, ObservationMetaData, ObservationFilter
 
 class VODFObservation:
@@ -46,13 +47,36 @@ class VODFObservation:
         return self._meta
 
     @property
+    def aeff(self):
+        if len(self._irf_groups)==1:
+            return self._irf_groups.aeff[0]
+        else:
+            raise ValueError(f"Observation contains more than one IRF group.")
+
+    @property
+    def edisp(self):
+        if len(self._irf_groups)==1:
+            return self._irf_groups.edisp[0]
+        else:
+            raise ValueError(f"Observation contains more than one IRF group.")
+
+    @property
+    def psf(self):
+        if len(self._irf_groups)==1:
+            return self._irf_groups.psf[0]
+        else:
+            raise ValueError(f"Observation contains more than one IRF group.")
+
+    @property
     def events(self):
         """Event list of the observation as an `~gammapy.data.EventList`."""
         events = self._events  # Removed events filtering for now
         return events
 
     def _irf_group_filter(self, idx):
-        time_filter = self._irf_groups[idx].time_range
+        # TODO: for now assume only one interval.
+        gti = self._irf_groups[idx].gti
+        time_filter = [gti.time_start[0], gti.time_stop[0]]
         return ObservationFilter(time_filter=time_filter)
 
     def select_time(self, time_interval):

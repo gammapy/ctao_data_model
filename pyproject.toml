@@ -1,0 +1,32 @@
+[project]
+name = "ctao_data_model"
+description = "A Gammapy prototype to support VODF/CTAO data model"
+authors = [{name="Régis Terrier",email="rterrier.github@gmail.com"},
+	{name="the Gammapy developers"}]
+license = {text = "BSD-3-Clause"}
+requires-python = ">=3.8"
+dependencies = ["gammapy>=1.0",]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+where = ["ctao_data_model"]
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+
+
