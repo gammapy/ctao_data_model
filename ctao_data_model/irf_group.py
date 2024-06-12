@@ -1,8 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 import collections
+from gammapy.utils.fits import LazyFitsData
 
 class IRFGroup:
     """Group different IRF components that represent the response in a given time range."""
+    aeff = LazyFitsData(cache=False)
+    edisp = LazyFitsData(cache=False)
+    psf = LazyFitsData(cache=False)
+    bkg = LazyFitsData(cache=False)
+
     def __init__(self, aeff=None, psf=None, edisp=None, bkg=None, rad_max=None, gti=None, is_pointlike=False):
         """
         Parameters
@@ -30,6 +36,85 @@ class IRFGroup:
         self.rad_max = rad_max
         self.gti = gti
         self.is_pointlike = is_pointlike
+
+
+    @classmethod
+    def from_hdu_index_table(cls, hdu_table, obs_id, required_irf="full-enclosure"):
+        """Access a given IRFGroup from a HDU index table.
+
+        Parameters
+        ----------
+        hdu_table : `~gammapy.data.`
+            Input index table
+        obs_id : int
+            Observation ID.
+        required_irf : list of str or str, optional
+            The list can include the following options:
+
+            * `"gti"` :  Good time intervals
+            * `"aeff"` : Effective area
+            * `"bkg"` : Background
+            * `"edisp"` : Energy dispersion
+            * `"psf"` : Point Spread Function
+            * `"rad_max"` : Maximal radius
+
+            Alternatively single string can be used as shortcut:
+
+            * `"full-enclosure"` : includes `["gti", "aeff", "edisp", "psf", "bkg"]`
+            * `"point-like"` : includes `["gti", "aeff", "edisp"]`
+
+            Default is `"full-enclosure"`.
+        require_events : bool, optional
+            Require events and gti table or not. Default is True.
+
+        Returns
+        -------
+        irf_group : `~cato_data_model.IRFGroup`
+            IRF container.
+        """
+        if obs_id not in hdu_table["OBS_ID"]:
+            raise ValueError(f"OBS_ID = {obs_id} not in HDU index table.")
+
+        kwargs = {"obs_id": int(obs_id)}
+
+        # check for the "short forms"
+        if isinstance(required_irf, str):
+            required_irf = REQUIRED_IRFS[required_irf]
+
+        if not set(required_irf).issubset(ALL_IRFS):
+            difference = set(required_irf).difference(ALL_IRFS)
+            raise ValueError(
+                f"{difference} is not a valid hdu key. Choose from: {ALL_IRFS}"
+            )
+
+        if require_events:
+            required_hdus = {"events", "gti"}.union(required_irf)
+        else:
+            required_hdus = required_irf
+
+        missing_hdus = []
+        kwargs_irf = {}
+        for hdu in ALL_HDUS:
+            hdu_location = hdu_table.hdu_location(
+                obs_id=obs_id,
+                hdu_type=hdu,
+                warn_missing=False,
+            )
+            if hdu_location is not None:
+                if hdu in ALL_IRFS:
+                    kwargs_irf[hdu] = hdu_location
+                else:
+                    kwargs[hdu] = hdu_location
+            elif hdu in required_hdus:
+                missing_hdus.append(hdu)
+
+        if len(missing_hdus) > 0:
+            raise MissingRequiredHDU(
+                f"Required HDUs {missing_hdus} not found in observation {obs_id}"
+            )
+
+        return IRFGroup(**kwargs_irf)
+
 
 class IRFGroups(collections.abc.MutableSequence):
     """Sequence of IRF groups."""

@@ -49,21 +49,21 @@ class VODFObservation:
     @property
     def aeff(self):
         if len(self._irf_groups)==1:
-            return self._irf_groups.aeff[0]
+            return self._irf_groups[0].aeff
         else:
             raise ValueError(f"Observation contains more than one IRF group.")
 
     @property
     def edisp(self):
         if len(self._irf_groups)==1:
-            return self._irf_groups.edisp[0]
+            return self._irf_groups[0].edisp
         else:
             raise ValueError(f"Observation contains more than one IRF group.")
 
     @property
     def psf(self):
         if len(self._irf_groups)==1:
-            return self._irf_groups.psf[0]
+            return self._irf_groups[0].psf
         else:
             raise ValueError(f"Observation contains more than one IRF group.")
 
