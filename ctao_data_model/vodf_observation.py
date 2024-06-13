@@ -1,5 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-from gammapy.data import EventList, GTI, Observation, ObservationMetaData, ObservationFilter
+from gammapy.data import EventList, GTI, Observation, ObservationMetaData, ObservationFilter, Observations
 
 class VODFObservation:
     """In-memory observation.
@@ -48,21 +48,21 @@ class VODFObservation:
 
     @property
     def aeff(self):
-        if len(self._irf_groups)==1:
+        if self.n_groups == 1:
             return self._irf_groups[0].aeff
         else:
             raise ValueError(f"Observation contains more than one IRF group.")
 
     @property
     def edisp(self):
-        if len(self._irf_groups)==1:
+        if self.n_groups == 1:
             return self._irf_groups[0].edisp
         else:
             raise ValueError(f"Observation contains more than one IRF group.")
 
     @property
     def psf(self):
-        if len(self._irf_groups)==1:
+        if self.n_groups==1:
             return self._irf_groups[0].psf
         else:
             raise ValueError(f"Observation contains more than one IRF group.")
@@ -72,6 +72,14 @@ class VODFObservation:
         """Event list of the observation as an `~gammapy.data.EventList`."""
         events = self._events  # Removed events filtering for now
         return events
+
+    @property
+    def n_groups(self):
+        return len(self._irf_groups)
+
+    @property
+    def pointing(self):
+        return self._pointing
 
     def _irf_group_filter(self, idx):
         # TODO: for now assume only one interval.
@@ -102,3 +110,29 @@ class VODFObservation:
     def events_in_irf_group(self, idx):
         filter = self._irf_group_filter(idx)
         return filter.filter_events(self.events)
+
+
+    def split(self):
+        """Split VODFObservation into a list of simple Observation elements."""
+        observations = Observations()
+        for irf_group in self._irf_groups:
+            # What to do with obsid. Now this is an int
+            time_filter = [irf_group.gti.time_start[0], irf_group.gti.time_stop[0]]
+            event_type_band = (irf_group.event_type-0.5, irf_group.event_type+0.5)
+            event_filter = {'type': 'custom', 'opts': dict(parameter='event_type', band=event_type_band)}
+            filter = ObservationFilter(time_filter=time_filter, event_filters=[event_filter])
+            obs = Observation(self.obs_id,
+                        aeff=irf_group.aeff,
+                        edisp=irf_group.edisp,
+                        psf=irf_group.psf,
+                        bkg=irf_group.bkg,
+                        gti=irf_group.gti,
+                        rad_max=irf_group.rad_max,
+                        pointing=self._pointing,
+                        events=self.events,
+                        obs_filter=filter,
+                        )
+            observations.append(obs)
+        return observations
+
+
