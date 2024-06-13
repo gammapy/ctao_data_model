@@ -151,6 +151,12 @@ class IRFGroups(collections.abc.MutableSequence):
         """List all IRFGroup time intervals."""
         return [irf_grp.gti for irf_grp in self._irf_groups]
 
+    @property
+    def event_types(self):
+        """List all IRFGroup time intervals."""
+        return list(set([irf_grp.event_type  for irf_grp in self._irf_groups]))
+
+
     def get_irf_group(self, time):
         """Retrieve IRFGroup valid at `~astropy.time.Time` time."""
         # TODO: Better use GTIs instead of list of times

@@ -2,3 +2,4 @@
 
 from irf_group import IRFGroup, IRFGroups
 from vodf_observation import VODFObservation
+from datasets_array import DatasetsArray
