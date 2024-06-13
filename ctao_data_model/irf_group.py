@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 import collections
 from gammapy.utils.fits import LazyFitsData
+from gammapy.data.data_store import REQUIRED_IRFS, ALL_HDUS, ALL_IRFS, MissingRequiredHDU
 
 class IRFGroup:
     """Group different IRF components that represent the response in a given time range."""
@@ -8,8 +9,9 @@ class IRFGroup:
     edisp = LazyFitsData(cache=False)
     psf = LazyFitsData(cache=False)
     bkg = LazyFitsData(cache=False)
+    gti = LazyFitsData(cache=False)
 
-    def __init__(self, aeff=None, psf=None, edisp=None, bkg=None, rad_max=None, gti=None, is_pointlike=False):
+    def __init__(self, aeff=None, psf=None, edisp=None, bkg=None, rad_max=None, gti=None, event_type=None, is_pointlike=False):
         """
         Parameters
         ----------
@@ -36,7 +38,7 @@ class IRFGroup:
         self.rad_max = rad_max
         self.gti = gti
         self.is_pointlike = is_pointlike
-
+        self.event_type = event_type
 
     @classmethod
     def from_hdu_index_table(cls, hdu_table, obs_id, required_irf="full-enclosure"):
@@ -87,10 +89,7 @@ class IRFGroup:
                 f"{difference} is not a valid hdu key. Choose from: {ALL_IRFS}"
             )
 
-        if require_events:
-            required_hdus = {"events", "gti"}.union(required_irf)
-        else:
-            required_hdus = required_irf
+        required_hdus = {"gti"}.union(required_irf)
 
         missing_hdus = []
         kwargs_irf = {}
@@ -101,7 +100,7 @@ class IRFGroup:
                 warn_missing=False,
             )
             if hdu_location is not None:
-                if hdu in ALL_IRFS:
+                if hdu in ALL_IRFS or hdu == "gti":
                     kwargs_irf[hdu] = hdu_location
                 else:
                     kwargs[hdu] = hdu_location
@@ -112,7 +111,7 @@ class IRFGroup:
             raise MissingRequiredHDU(
                 f"Required HDUs {missing_hdus} not found in observation {obs_id}"
             )
-
+        print(kwargs_irf)
         return IRFGroup(**kwargs_irf)
 
 
